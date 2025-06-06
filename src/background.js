@@ -1,29 +1,38 @@
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+  // This line is essential. It tells Chrome to open the side panel 
+  // when the user clicks the extension's action icon.
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch((error) => console.error(error));
+  console.log('Reddit Thread Reducer extension installed and side panel behavior set.');
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'extractAndSimplify') {
-    extractAndSimplifyRedditThread(request.url)
+    extractAndSimplifyRedditThread(request.url, request.mode)
       .then(result => sendResponse({ success: true, data: result }))
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true;
   }
 });
 
-async function extractAndSimplifyRedditThread(url) {
+async function extractAndSimplifyRedditThread(url, mode) {
   if (!isValidRedditPostUrl(url)) {
     throw new Error('Invalid Reddit post URL');
   }
 
   const jsonUrl = url.replace(/\/?$/, '') + '.json';
-  
+
   try {
     const tab = await chrome.tabs.create({ url: jsonUrl, active: false });
-    
-    await new Promise(resolve => {
+
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        chrome.tabs.onUpdated.removeListener(listener);
+        reject(new Error('Timeout loading Reddit data'));
+      }, 10000); // 10 second timeout
+
       const listener = (tabId, changeInfo) => {
         if (tabId === tab.id && changeInfo.status === 'complete') {
+          clearTimeout(timeout);
           chrome.tabs.onUpdated.removeListener(listener);
           resolve();
         }
@@ -36,7 +45,11 @@ async function extractAndSimplifyRedditThread(url) {
       func: () => document.body.innerText
     });
 
-    await chrome.tabs.remove(tab.id);
+    try {
+      await chrome.tabs.remove(tab.id);
+    } catch (e) {
+      console.error('Failed to remove tab:', e);
+    }
 
     if (!results || !results[0] || !results[0].result) {
       throw new Error('Failed to read page content');
@@ -44,14 +57,14 @@ async function extractAndSimplifyRedditThread(url) {
 
     const rawJson = results[0].result;
     let data;
-    
+
     try {
       data = JSON.parse(rawJson);
     } catch (e) {
       throw new Error('Received malformed data from Reddit');
     }
 
-    return processRedditData(data);
+    return processRedditData(data, mode);
   } catch (error) {
     if (error.message.includes('Failed to fetch')) {
       throw new Error('Failed to fetch data from Reddit. Check your connection or try again.');
@@ -65,7 +78,7 @@ function isValidRedditPostUrl(url) {
   return pattern.test(url);
 }
 
-function processRedditData(data) {
+function processRedditData(data, mode) {
   if (!Array.isArray(data) || data.length < 2) {
     throw new Error('Could not parse Reddit data structure');
   }
@@ -86,22 +99,25 @@ function processRedditData(data) {
     comments: []
   };
 
-  simplified.comments = processComments(commentsData);
+  simplified.comments = processComments(commentsData, mode);
 
   return JSON.stringify(simplified, null, 2);
 }
 
-function processComments(comments, depth = 0) {
+function processComments(comments, mode, depth = 0) {
   const processedComments = [];
 
   for (const comment of comments) {
     if (comment.kind !== 't1' || !comment.data) continue;
-    
+
     const data = comment.data;
-    
-    if (data.author === '[deleted]' && data.body === '[deleted]') continue;
-    if (data.author === 'AutoModerator') continue;
-    if (data.score < -5) continue;
+
+    // Only apply filters if the mode is 'simplify'
+    if (mode === 'simplify') {
+      if (data.author === '[deleted]' && data.body === '[deleted]') continue;
+      if (data.author === 'AutoModerator') continue;
+      if (data.score < -5) continue;
+    }
 
     const processedComment = {
       author: data.author || '[deleted]',
@@ -111,7 +127,7 @@ function processComments(comments, depth = 0) {
     };
 
     if (data.replies && data.replies.data && data.replies.data.children) {
-      processedComment.replies = processComments(data.replies.data.children, depth + 1);
+      processedComment.replies = processComments(data.replies.data.children, mode, depth + 1);
     }
 
     processedComments.push(processedComment);

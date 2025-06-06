@@ -10,7 +10,7 @@ async function checkCurrentTab() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     currentTabUrl = tab.url;
-    
+
     if (!isValidRedditPostUrl(currentTabUrl)) {
       extractBtn.disabled = true;
       infoMessage.textContent = 'Please navigate to a Reddit post to use this extension';
@@ -42,13 +42,16 @@ extractBtn.addEventListener('click', async () => {
   copyBtn.disabled = true;
   outputTextarea.value = '';
   updateStatus('Extracting...', '');
-  
+
+  const selectedMode = document.querySelector('input[name="extractionMode"]:checked').value;
+
   try {
     const response = await chrome.runtime.sendMessage({
       action: 'extractAndSimplify',
-      url: currentTabUrl
+      url: currentTabUrl,
+      mode: selectedMode
     });
-    
+
     if (response.success) {
       outputTextarea.value = response.data;
       copyBtn.disabled = false;
@@ -79,7 +82,7 @@ copyBtn.addEventListener('click', async () => {
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete') {
+  if (changeInfo.status === 'complete' && tab.active) {
     checkCurrentTab();
   }
 });

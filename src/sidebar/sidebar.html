@@ -1,29 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reddit Thread Reducer</title>
   <link rel="stylesheet" href="sidebar.css">
 </head>
+
 <body>
   <div class="header">
     Reddit Thread Reducer
   </div>
-  
+
   <div class="container">
     <div class="control-area">
-      <button id="extractBtn">Extract & Simplify</button>
+      <div class="mode-selection">
+        <label>
+          <input type="radio" name="extractionMode" value="simplify" checked> Simplify
+        </label>
+        <label>
+          <input type="radio" name="extractionMode" value="extractAll"> Extract All
+        </label>
+      </div>
+      <button id="extractBtn">Extract Content</button>
       <div id="status"></div>
       <div id="infoMessage" class="info-message" style="display: none;"></div>
     </div>
-    
+
     <div class="output-area">
-      <textarea id="output" readonly placeholder="Simplified JSON will appear here..."></textarea>
+      <textarea id="output" readonly placeholder="Structured JSON will appear here..."></textarea>
       <button id="copyBtn" disabled>Copy to Clipboard</button>
     </div>
   </div>
-  
+
   <script src="sidebar.js"></script>
 </body>
+
 </html>

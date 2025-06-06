@@ -1,18 +1,18 @@
 ### **Functional Requirements Document (FRD): Reddit Thread Reducer**
 
-**Version:** 1.0
+**Version:** 1.1
 
 ---
 
 #### **1. Overview**
 
 **1.1. Project Goal**
-To develop a Chrome browser extension, "Reddit Thread Reducer," that provides a one-click solution to transform the content of a Reddit post page from its raw, complex JSON format into a simplified, structured, and human-readable JSON output.
+To develop a Chrome browser extension, "Reddit Thread Reducer," that provides a one-click solution to transform the content of a Reddit post page from its raw, complex JSON format into a structured, human-readable JSON output. The extension offers two modes: **"Simplify"** (filters out low-value content) and **"Extract All"** (retrieves all content verbatim).
 
 **1.2. Target Audience**
 *   Users who need to quickly extract and archive the core content of Reddit threads.
 *   Developers and researchers who use Large Language Models (LLMs) for data analysis or content generation.
-*   Any user wishing to consume Reddit discussions in a clean, noise-free format.
+*   Any user wishing to consume Reddit discussions in a clean, noise-free format or requiring a complete, unfiltered dataset.
 
 **1.3. Core Value**
 The extension streamlines the process of acquiring high-quality, contextual information from Reddit by automating data extraction, filtering, and restructuring. Its key value lies in its **seamless background processing**, allowing users to complete the entire operation without leaving their current page, thus providing a fluid and efficient user experience.
@@ -24,10 +24,11 @@ The extension streamlines the process of acquiring high-quality, contextual info
 **2.1. User Workflow**
 1.  The user opens a specific Reddit post page in the Chrome browser.
 2.  The user clicks the "Reddit Thread Reducer" icon in the browser toolbar, which **opens a sidebar** on the right side of the browser window.
-3.  The user clicks the **"Extract & Simplify"** button within the sidebar UI.
-4.  The extension performs all tasks in the background. The user's main browser page **remains unchanged, with no redirects, refreshes, or flashes**.
-5.  After a moment, the processed, simplified JSON data appears directly in the sidebar's text area. The sidebar remains open for easy reference.
-6.  The user can click the **"Copy to Clipboard"** button to copy the result.
+3.  The user selects the desired extraction mode from the available options: **"Simplify"** (default) or **"Extract All"**.
+4.  The user clicks the **"Extract Content"** button within the sidebar UI.
+5.  The extension performs all tasks in the background. The user's main browser page **remains unchanged, with no redirects, refreshes, or flashes**.
+6.  After a moment, the processed JSON data appears directly in the sidebar's text area. The sidebar remains open for easy reference.
+7.  The user can click the **"Copy to Clipboard"** button to copy the result.
 
 **2.2. System Backend Workflow (Background Tab Method)**
 1.  **URL Capture & Validation:** The sidebar script (`sidebar.js`) gets the URL of the current active tab and validates that it is a valid Reddit post URL.
@@ -41,8 +42,8 @@ The extension streamlines the process of acquiring high-quality, contextual info
 5.  **Immediate Cleanup:**
     *   As soon as the JSON string is successfully retrieved, the background script instantly calls `chrome.tabs.remove()` to **close the hidden temporary tab**. This process is typically completed in milliseconds and is imperceptible to the user.
 6.  **Data Processing & Passthrough:**
-    *   With the raw JSON string acquired, the background script executes the JavaScript-based data reduction logic (parsing, filtering, restructuring).
-    *   The final, simplified JSON string is sent back to the sidebar UI via the messaging system for display.
+    *   With the raw JSON string acquired, the background script executes the JavaScript-based data reduction logic based on the user's selected mode (Simplify or Extract All).
+    *   The final, structured JSON string is sent back to the sidebar UI via the messaging system for display.
 
 **2.3. Data Transformation Example**
 
@@ -88,7 +89,7 @@ https://www.reddit.com/r/ClaudeAI/comments/1l48ut1/everyone_is_using_mcp_and_cla
 ]
 ```
 
-**2.3.3. Sample Simplified JSON (Final output displayed by the extension)**
+**2.3.3. Sample Simplified JSON (Final output for "Simplify" mode)**
 ```json
 {
   "post": {
@@ -106,6 +107,7 @@ https://www.reddit.com/r/ClaudeAI/comments/1l48ut1/everyone_is_using_mcp_and_cla
   ]
 }
 ```
+*(Note: In "Extract All" mode, the output would also include the comment from `[deleted]`)*
 
 ---
 
@@ -120,14 +122,17 @@ https://www.reddit.com/r/ClaudeAI/comments/1l48ut1/everyone_is_using_mcp_and_cla
 *   **Layout & Components:**
     *   **Title Bar:** Displays the extension's name, "Reddit Thread Reducer".
     *   **Control Area:**
-        *   A prominent primary button (`id="extractBtn"`) labeled **"Extract & Simplify"**.
+        *   A **Mode Selection** area with radio buttons:
+            *   **"Simplify"**: Filters content (default).
+            *   **"Extract All"**: Extracts all content without filtering.
+        *   A prominent primary button (`id="extractBtn"`) labeled **"Extract Content"**.
         *   A status text element (`id="status"`) to provide feedback on the current state (e.g., "Ready", "Extracting...", "Success!", "Error!").
     *   **Output Area:**
         *   A read-only, multi-line text box (`id="output"`, `<textarea readonly>`) to display the final JSON result. The text box must have a vertical scrollbar for long content.
         *   A **"Copy to Clipboard"** button (`id="copyBtn"`) located next to or below the text area.
 *   **Interaction Logic (`sidebar.js`):**
-    *   **Initial State:** Upon opening, the script checks the current page's URL. If it is not a valid Reddit post page, the "Extract & Simplify" button will be disabled, and a message will prompt the user to navigate to one.
-    *   **On Extract Click:** The button becomes disabled, the status text updates to "Extracting...", and any previous output is cleared. A message is sent to the background script to initiate the process.
+    *   **Initial State:** Upon opening, the script checks the current page's URL. If it is not a valid Reddit post page, the "Extract Content" button will be disabled, and a message will prompt the user to navigate to one.
+    *   **On Extract Click:** The button becomes disabled, the status text updates to "Extracting...", and any previous output is cleared. A message containing the URL and the selected extraction mode is sent to the background script to initiate the process.
     *   **On Success:** The button is re-enabled, the status text shows "Success!", the processed result is displayed in the output area, and the "Copy to Clipboard" button becomes active.
     *   **On Failure:** The button is re-enabled, and the status text displays a specific error message.
 
@@ -158,7 +163,8 @@ https://www.reddit.com/r/ClaudeAI/comments/1l48ut1/everyone_is_using_mcp_and_cla
 
 **4.2. Data Processing Logic (JavaScript)**
 *   The core data reduction logic must be fully implemented in JavaScript within `background.js`.
-*   This includes a recursive function to correctly process the nested structure of comments and replies and to properly apply the cascading filter rules.
+*   It contains conditional logic based on the user-selected mode. If the mode is "Simplify", it applies filtering rules (e.g., removing deleted comments, AutoModerator posts, and heavily downvoted comments). If the mode is "Extract All", these filters are bypassed.
+*   This includes a recursive function to correctly process the nested structure of comments and replies and to properly apply the filtering rules when required.
 
 ---
 
