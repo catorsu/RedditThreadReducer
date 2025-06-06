@@ -9,27 +9,35 @@
 </head>
 
 <body>
-  <div class="header">
-    Reddit Thread Reducer
-  </div>
 
   <div class="container">
     <div class="control-area">
-      <div class="mode-selection">
-        <label>
-          <input type="radio" name="extractionMode" value="simplify" checked> Simplify
-        </label>
-        <label>
-          <input type="radio" name="extractionMode" value="extractAll"> Extract All
-        </label>
+      <!-- Group 1: Extraction Mode (Horizontal) -->
+      <div class="control-row">
+        <span class="row-label">Extraction Mode:</span>
+        <label><input type="radio" name="extractionMode" value="simplify" checked> Simplify</label>
+        <label><input type="radio" name="extractionMode" value="extractAll"> Extract All</label>
       </div>
-      <button id="extractBtn">Extract Content</button>
-      <div id="status"></div>
-      <div id="infoMessage" class="info-message" style="display: none;"></div>
+
+      <!-- Group 2: Filter Rules (Horizontal) -->
+      <div id="filterRules" class="control-row">
+        <span class="row-label">Filter Rules:</span>
+        <label><input type="checkbox" id="filterDeleted" checked> Filter Deleted Comments</label>
+        <label><input type="checkbox" id="filterAutoMod" checked> Filter Bot Comments</label>
+        <label>Min Score: <input type="number" id="minScore" value="-5"></label>
+      </div>
+
+      <!-- Group 3: Output Format & Actions (Horizontal) -->
+      <div class="control-row">
+        <span class="row-label">Output Format:</span>
+        <label><input type="radio" name="outputFormat" value="json" checked> JSON</label>
+        <label><input type="radio" name="outputFormat" value="markdown"> Markdown</label>
+        <button id="extractBtn">Extract Content</button>
+      </div>
     </div>
 
     <div class="output-area">
-      <textarea id="output" readonly placeholder="Structured JSON will appear here..."></textarea>
+      <textarea id="output" readonly placeholder="Processed content will appear here..."></textarea>
       <button id="copyBtn" disabled>Copy to Clipboard</button>
     </div>
   </div>

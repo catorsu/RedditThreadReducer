@@ -16,12 +16,21 @@
     "service_worker": "src/background.js"
   },
   "action": {
-    "default_title": "Reddit Thread Reducer"
+    "default_title": "Reddit Thread Reducer",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
   "side_panel": {
     "default_path": "src/sidebar/sidebar.html"
-  },
-  "icons": {
-    "128": "icons/icon.svg"
   }
 }
