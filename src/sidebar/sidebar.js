@@ -1,5 +1,3 @@
-// src/sidebar/sidebar.js
-
 const extractBtn = document.getElementById('extractBtn');
 const outputTextarea = document.getElementById('output');
 const copyBtn = document.getElementById('copyBtn');
